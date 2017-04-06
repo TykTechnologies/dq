@@ -40,7 +40,7 @@ func NewDQ(f Flusher, e ErrorHandler, nid string) *DistributedQuota {
 		FlushInterval:      time.Second * 60,
 	}
 
-	d.InitQuota(0, 0, "default-dq-quota")
+	//d.InitQuota(0, 0, "default-dq-quota")
 
 	return d
 }
@@ -183,7 +183,7 @@ func (d *DistributedQuota) IncrBy(id string, c int) QuotaStatus {
 	if f {
 		return d.quotas[id].IncrBy(c)
 	}
-	return quota_not_found
+	return Quota_not_found
 }
 
 func (d *DistributedQuota) persistCounters(errChan chan error) {

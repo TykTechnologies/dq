@@ -7,9 +7,9 @@ import (
 type QuotaStatus int
 
 const (
-	quota_violated QuotaStatus = iota
-	quota_ok
-	quota_not_found
+	Quota_violated QuotaStatus = iota
+	Quota_ok
+	Quota_not_found
 )
 
 type Quota struct {
@@ -30,9 +30,9 @@ func (q *Quota) Limit() int {
 
 func (q *Quota) IncrBy(c int) QuotaStatus {
 	q.Counter.IncVal(c)
-	if q.Counter.Count() >= q.Max {
-		return quota_violated
+	if q.Counter.Count() > q.Max {
+		return Quota_violated
 	}
 
-	return quota_ok
+	return Quota_ok
 }

@@ -4,9 +4,9 @@ import (
 	"github.com/TykTechnologies/tyk-cluster-framework/client"
 	"github.com/TykTechnologies/tyk-cluster-framework/encoding"
 	"log"
-	"os"
 	"testing"
 	"time"
+	"os"
 )
 
 type simpleStorage struct {
@@ -64,8 +64,14 @@ func TestDQ(t *testing.T) {
 	t.Run("Test Basic DQ", func(t *testing.T) {
 		d1.InitQuota(5, 0, "test-quota-1")
 
-		qs1 := d1.IncrBy("test-quota-1", 5)
-		if qs1 != quota_violated {
+		d1.IncrBy("test-quota-1", 1)
+		d1.IncrBy("test-quota-1", 1)
+		d1.IncrBy("test-quota-1", 1)
+		d1.IncrBy("test-quota-1", 1)
+		d1.IncrBy("test-quota-1", 1)
+
+		qs1 := d1.IncrBy("test-quota-1", 1)
+		if qs1 != Quota_violated {
 			t.Fatalf("Quota should be violated, got: %v\n", qs1)
 		}
 	})
@@ -75,7 +81,7 @@ func TestDQ(t *testing.T) {
 		d2.InitQuota(10, 0, "test-quota-2")
 
 		qs1 := d1.IncrBy("test-quota-2", 2)
-		if qs1 == quota_violated {
+		if qs1 == Quota_violated {
 			t.Fatalf("Quota should not be violated, got: %v\n", qs1)
 		}
 
@@ -83,11 +89,11 @@ func TestDQ(t *testing.T) {
 		for i := 0; i <= 10; i++ {
 			qst := d2.IncrBy("test-quota-2", 1)
 			if i >= 8 {
-				if qst != quota_violated {
+				if qst != Quota_violated {
 					t.Fatal("Quota should be violated!")
 				}
 			}
-			if qst == quota_violated {
+			if qst == Quota_violated {
 				break
 			}
 			time.Sleep(time.Millisecond * 50)
@@ -99,14 +105,14 @@ func TestDQ(t *testing.T) {
 		d2.InitQuota(10, 0, "test-quota-3")
 
 		qs1 := d1.IncrBy("test-quota-3", 2)
-		if qs1 == quota_violated {
+		if qs1 == Quota_violated {
 			t.Fatalf("Quota should not be violated, got: %v\n", qs1)
 		}
 
 		// lets keep incrementing on dq2
 		for i := 0; i <= 5; i++ {
 			qst := d2.IncrBy("test-quota-3", 1)
-			if qst == quota_violated {
+			if qst == Quota_violated {
 				t.Fatal("Quota should not be vilated at all")
 			}
 			time.Sleep(time.Millisecond * 50)
@@ -116,12 +122,12 @@ func TestDQ(t *testing.T) {
 		for i := 0; i <= 5; i++ {
 			qst := d1.IncrBy("test-quota-3", 1)
 			if i >= 3 {
-				if qst != quota_violated {
+				if qst != Quota_violated {
 					t.Fatal("Quota should be violated!")
 				}
 			}
 
-			if qst == quota_violated {
+			if qst == Quota_violated {
 				break
 			}
 
@@ -135,14 +141,14 @@ func TestDQ(t *testing.T) {
 		d2.InitQuota(10, 0, "test-quota-4")
 
 		qs1 := d1.IncrBy("test-quota-4", 2)
-		if qs1 == quota_violated {
+		if qs1 == Quota_violated {
 			t.Fatalf("Quota should not be violated, got: %v\n", qs1)
 		}
 
 		// lets keep incrementing on dq2
 		for i := 0; i <= 5; i++ {
 			qst := d2.IncrBy("test-quota-4", 1)
-			if qst == quota_violated {
+			if qst == Quota_violated {
 				t.Fatal("Quota should not be vilated at all")
 			}
 			time.Sleep(time.Millisecond * 50)
@@ -153,13 +159,13 @@ func TestDQ(t *testing.T) {
 		// Quota should no just be 0
 		for i := 0; i <= 5; i++ {
 			qst := d1.IncrBy("test-quota-4", 1)
-			if i >= 3 {
-				if qst != quota_not_found {
+			if i >= 4 {
+				if qst != Quota_not_found {
 					t.Fatalf("Quota should be not found, got different status though: %v\n!", qst)
 				}
 			}
 
-			if qst == quota_violated {
+			if qst == Quota_violated {
 				break
 			}
 
@@ -173,14 +179,14 @@ func TestDQ(t *testing.T) {
 		d2.InitQuota(10, 0, "test-quota-5")
 
 		qs1 := d1.IncrBy("test-quota-5", 2)
-		if qs1 == quota_violated {
+		if qs1 == Quota_violated {
 			t.Fatalf("Quota should not be violated, got: %v\n", qs1)
 		}
 
 		// lets keep incrementing on dq2
 		for i := 0; i <= 5; i++ {
 			qst := d2.IncrBy("test-quota-5", 1)
-			if qst == quota_violated {
+			if qst == Quota_violated {
 				t.Fatal("Quota should not be vilated at all")
 			}
 			time.Sleep(time.Millisecond * 50)
@@ -194,12 +200,12 @@ func TestDQ(t *testing.T) {
 		for i := 0; i <= 5; i++ {
 			qst := d1.IncrBy("test-quota-5", 1)
 			if i >= 3 {
-				if qst != quota_violated {
+				if qst != Quota_violated {
 					t.Fatalf("Quota should be be violated, got: %v\n!", qst)
 				}
 			}
 
-			if qst == quota_violated {
+			if qst == Quota_violated {
 				break
 			}
 
