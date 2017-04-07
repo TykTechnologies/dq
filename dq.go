@@ -40,8 +40,6 @@ func NewDQ(f Flusher, e ErrorHandler, nid string) *DistributedQuota {
 		FlushInterval:      time.Second * 60,
 	}
 
-	//d.InitQuota(0, 0, "default-dq-quota")
-
 	return d
 }
 
@@ -156,10 +154,10 @@ func (d *DistributedQuota) Delete(id string) {
 	delete(d.quotas, id)
 }
 
-func (d *DistributedQuota) InitQuota(max, used_quota int, id string) {
+func (d *DistributedQuota) InitQuota(max, used_quota int, id string, meta interface{}) {
 	q, f := d.quotas[id]
 	if !f {
-		q = &Quota{ID: id, Max: 0, Counter: crdt.NewGCounter(), NodeID: d.nodeID}
+		q = &Quota{ID: id, Max: 0, Counter: crdt.NewGCounter(), NodeID: d.nodeID, Meta: meta}
 		d.quotas[id] = q
 	}
 
