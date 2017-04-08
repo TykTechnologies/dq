@@ -27,6 +27,8 @@ type DistributedQuota struct {
 }
 
 type Flusher func(map[string]*Quota) error
+type Loader func([]byte) (map[string]*Quota, error)
+
 type ErrorHandler func(err error)
 
 func NewDQ(f Flusher, e ErrorHandler, nid string) *DistributedQuota {
@@ -94,7 +96,7 @@ func (d *DistributedQuota) listenForCounters(errorChan chan error) error {
 		for k, v := range remoteCounters {
 
 			if v.Delete {
-				d.Delete(v.ID)
+				d.deleteObject(v.ID)
 				skip = true
 			}
 
@@ -104,7 +106,11 @@ func (d *DistributedQuota) listenForCounters(errorChan chan error) error {
 				if v.NodeID != d.nodeID {
 					count, f := d.quotas[k]
 					if f {
+						// Found it? Merge
 						count.Counter.Merge(v.Counter)
+					} else {
+						// Not found - track it
+						d.InitQuota(v.Max, 0, k, v.Meta)
 					}
 				}
 
@@ -150,29 +156,34 @@ func (d *DistributedQuota) handleChannelErrors(errChan chan error) {
 	}
 }
 
-func (d *DistributedQuota) Delete(id string) {
+func (d *DistributedQuota) deleteObject(id string) {
 	delete(d.quotas, id)
 }
 
-func (d *DistributedQuota) InitQuota(max, used_quota int, id string, meta interface{}) {
+func (d *DistributedQuota) TagDelete(id string) {
 	q, f := d.quotas[id]
 	if !f {
+		return
+	}
+
+	q.Delete = true
+}
+
+func (d *DistributedQuota) InitQuota(max int, init_value int, id string, meta interface{}) {
+	q, f := d.quotas[id]
+
+	// Not found, or it's been deleted, re-init
+	if !f || q.Delete {
 		q = &Quota{ID: id, Max: 0, Counter: crdt.NewGCounter(), NodeID: d.nodeID, Meta: meta}
 		d.quotas[id] = q
 	}
 
-	if q.Max == 0 {
-		q.Max = max
+	if init_value > q.Counter.Count() {
+		q.IncrBy(init_value)
 	}
 
-	if q.Counter.Count() == 0 {
-		divBy := d.knownNodes.Count()
-		if d.knownNodes.Count() == 0 {
-			divBy = 1
-		}
-		distributedInit := used_quota / divBy
-
-		q.Counter.IncVal(distributedInit)
+	if q.Max == 0 {
+		q.Max = max
 	}
 }
 

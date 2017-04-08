@@ -32,6 +32,7 @@ func TestDQ(t *testing.T) {
 	topic := "dq.tests.quotas"
 
 	redisServer := os.Getenv("TCF_TEST_REDIS")
+	redisServer = "localhost:32768"
 	if redisServer == "" {
 		redisServer = "localhost:6379"
 	}
@@ -62,7 +63,7 @@ func TestDQ(t *testing.T) {
 	time.Sleep(time.Second * 2)
 
 	t.Run("Test Basic DQ", func(t *testing.T) {
-		d1.InitQuota(5, 0, "test-quota-1", nil)
+		d1.InitQuota(5, 0,"test-quota-1", nil)
 
 		d1.IncrBy("test-quota-1", 1)
 		d1.IncrBy("test-quota-1", 1)
@@ -77,8 +78,8 @@ func TestDQ(t *testing.T) {
 	})
 
 	t.Run("Test Distributed and Initialised DQ", func(t *testing.T) {
-		d1.InitQuota(10, 0, "test-quota-2", nil)
-		d2.InitQuota(10, 0, "test-quota-2", nil)
+		d1.InitQuota(10, 0,"test-quota-2", nil)
+		d2.InitQuota(10, 0,"test-quota-2", nil)
 
 		qs1 := d1.IncrBy("test-quota-2", 2)
 		if qs1 == Quota_violated {
@@ -101,8 +102,8 @@ func TestDQ(t *testing.T) {
 	})
 
 	t.Run("Test Distributed and Initialised DQ Two-way", func(t *testing.T) {
-		d1.InitQuota(10, 0, "test-quota-3", nil)
-		d2.InitQuota(10, 0, "test-quota-3", nil)
+		d1.InitQuota(10, 0,"test-quota-3", nil)
+		d2.InitQuota(10, 0,"test-quota-3", nil)
 
 		qs1 := d1.IncrBy("test-quota-3", 2)
 		if qs1 == Quota_violated {
@@ -137,8 +138,8 @@ func TestDQ(t *testing.T) {
 	})
 
 	t.Run("Test Distributed and Initialised DQ Two-way with delete", func(t *testing.T) {
-		d1.InitQuota(10, 0, "test-quota-4", nil)
-		d2.InitQuota(10, 0, "test-quota-4", nil)
+		d1.InitQuota(10, 0,"test-quota-4", nil)
+		d2.InitQuota(10, 0,"test-quota-4", nil)
 
 		qs1 := d1.IncrBy("test-quota-4", 2)
 		if qs1 == Quota_violated {
@@ -155,7 +156,7 @@ func TestDQ(t *testing.T) {
 		}
 
 		// Quota is now 7
-		d2.Delete("test-quota-4")
+		d2.TagDelete("test-quota-4")
 		// Quota should no just be 0
 		for i := 0; i <= 5; i++ {
 			qst := d1.IncrBy("test-quota-4", 1)
@@ -175,8 +176,8 @@ func TestDQ(t *testing.T) {
 	})
 
 	t.Run("Test Distributed and Initialised DQ Two-way with delete and reinit", func(t *testing.T) {
-		d1.InitQuota(10, 0, "test-quota-5", nil)
-		d2.InitQuota(10, 0, "test-quota-5", nil)
+		d1.InitQuota(10, 0,"test-quota-5", nil)
+		d2.InitQuota(10, 0,"test-quota-5", nil)
 
 		qs1 := d1.IncrBy("test-quota-5", 2)
 		if qs1 == Quota_violated {
@@ -193,8 +194,8 @@ func TestDQ(t *testing.T) {
 		}
 
 		// Quota is now 7
-		d2.Delete("test-quota-5")
-		d2.InitQuota(5, 0, "test-quota-5", nil)
+		d2.TagDelete("test-quota-5")
+		d2.InitQuota(5, 0,"test-quota-5", nil)
 		d2.IncrBy("test-quota4-5", 2)
 		// Quota should now be 2
 		for i := 0; i <= 5; i++ {
