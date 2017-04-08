@@ -27,7 +27,6 @@ type DistributedQuota struct {
 }
 
 type Flusher func(map[string]*Quota) error
-type Loader func([]byte) (map[string]*Quota, error)
 
 type ErrorHandler func(err error)
 
