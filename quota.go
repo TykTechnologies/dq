@@ -18,7 +18,7 @@ type Quota struct {
 	Max     int
 	Counter *crdt.GCounter
 	Delete  bool
-	Meta interface{}
+	Meta    interface{}
 }
 
 func (q *Quota) Used() int {

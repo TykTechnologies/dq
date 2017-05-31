@@ -2,6 +2,7 @@ package dq
 
 import (
 	"errors"
+	"fmt"
 	"github.com/TykTechnologies/crdt"
 	"github.com/TykTechnologies/tyk-cluster-framework/client"
 	"github.com/TykTechnologies/tyk-cluster-framework/payloads"
@@ -24,6 +25,7 @@ type DistributedQuota struct {
 	flushWith          Flusher
 	FlushInterval      time.Duration
 	handleChannelError ErrorHandler
+	stop               bool
 }
 
 type Flusher func(map[string]*Quota) error
@@ -48,6 +50,10 @@ func (d *DistributedQuota) SetLeader(t bool) {
 	d.IsLeader = t
 }
 
+func (d *DistributedQuota) Stop() {
+	d.stop = true
+}
+
 func (d *DistributedQuota) broadcast(errChan chan error) {
 	if d.conn.client == nil {
 		errChan <- errors.New("Config not set")
@@ -61,11 +67,21 @@ func (d *DistributedQuota) broadcast(errChan chan error) {
 		case <-ticker:
 			p, plErr := payloads.NewPayload(d.quotas)
 			if plErr != nil {
-				errChan <- plErr
+				fmt.Printf("[DQ] [ERROR] Payload failure: %v", plErr)
+				select {
+				case errChan <- plErr:
+				default:
+				}
 			}
 
-			if pErr := d.conn.client.Publish(d.conn.topic, p); pErr != nil {
-				errChan <- pErr
+			if !d.stop {
+				if pErr := d.conn.client.Publish(d.conn.topic, p); pErr != nil {
+					fmt.Printf("[DQ] [ERROR] Broadcast failure: %v", pErr)
+					select {
+					case errChan <- plErr:
+					default:
+					}
+				}
 			}
 
 			ticker = time.After(d.conn.interval)
@@ -127,10 +143,12 @@ func (d *DistributedQuota) listenForCounters(errorChan chan error) error {
 
 func (d *DistributedQuota) Start() error {
 	d.errChan = make(chan error)
+	d.stop = false
 
-	if err := d.conn.client.Connect(); err != nil {
-		return err
-	}
+	// Assume the client is already connected
+	//if err := d.conn.client.Connect(); err != nil {
+	//	return err
+	//}
 
 	go d.handleChannelErrors(d.errChan)
 	go d.persistCounters(d.errChan)
